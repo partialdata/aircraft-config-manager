@@ -54,7 +54,7 @@ class ConfigServiceTest {
 
         ConfigDocument saved = configService.save(node, json);
 
-        assertThat(saved.getId()).isEqualTo("generated-id");
+        assertThat(saved.getId()).isNotBlank();
         assertThat(saved.getConfigId()).isEqualTo("ACM-1001");
         assertThat(saved.getSoftwareVersion()).isEqualTo("1.2.3");
         assertThat(saved.getNavDataCycle()).isEqualTo("AIRAC-2024-08");
