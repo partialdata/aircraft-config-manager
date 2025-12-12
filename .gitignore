@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+
+# Java / Maven / Gradle
+target/
+build/
+*.log
+*.class
+*.jar
+*.war
+*.iml
+.gradle/
+.mvn/wrapper/maven-wrapper.jar
+
+# Node / Angular
+node_modules/
+dist/
+npm-debug.log
+yarn-error.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# VSCode / IDEs
+.vscode/
+.idea/
+*.swp
+prd.md
