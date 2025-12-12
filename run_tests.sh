@@ -7,7 +7,7 @@ echo "[backend] running tests"
 echo "[frontend] running unit tests"
 (cd frontend && npm install && npm test)
 
-echo "[analyzer] running FastAPI smoke"
-(cd analyzer && python -m py_compile main.py)
+echo "[analyzer] running FastAPI tests"
+(cd analyzer && pip install -q -r requirements.txt && pytest -q)
 
 echo "All test suites executed."

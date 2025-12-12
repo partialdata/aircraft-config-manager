@@ -8,7 +8,7 @@ import com.acm.backend.dto.UploadResponse;
 import com.acm.backend.dto.ValidationResult;
 import com.acm.backend.model.ConfigDocument;
 import com.acm.backend.repository.ConfigRepository;
-import com.acm.backend.service.AnalyzerClient;
+import com.acm.backend.service.AnalyzerPort;
 import com.acm.backend.service.ConfigService;
 import com.acm.backend.service.DiffService;
 import com.acm.backend.service.ValidationService;
@@ -31,12 +31,12 @@ import java.util.stream.Collectors;
 public class ConfigController {
 
     private final ValidationService validationService;
-    private final AnalyzerClient analyzerClient;
+    private final AnalyzerPort analyzerClient;
     private final ConfigService configService;
     private final DiffService diffService;
     private final ConfigRepository repository;
 
-    public ConfigController(ValidationService validationService, AnalyzerClient analyzerClient, ConfigService configService, DiffService diffService, ConfigRepository repository) {
+    public ConfigController(ValidationService validationService, AnalyzerPort analyzerClient, ConfigService configService, DiffService diffService, ConfigRepository repository) {
         this.validationService = validationService;
         this.analyzerClient = analyzerClient;
         this.configService = configService;

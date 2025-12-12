@@ -15,7 +15,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.Map;
 
 @Service
-public class AnalyzerClient {
+public class AnalyzerClient implements AnalyzerPort {
     private static final Logger log = LoggerFactory.getLogger(AnalyzerClient.class);
 
     private final RestTemplate restTemplate;

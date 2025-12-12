@@ -25,8 +25,7 @@
             "production": {
               "optimization": true,
               "outputHashing": "all",
-              "sourceMap": false,
-              "extractCss": true
+              "sourceMap": false
             }
           }
         },
@@ -50,6 +49,5 @@
         }
       }
     }
-  },
-  "defaultProject": "acm-frontend"
+  }
 }

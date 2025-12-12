@@ -52,7 +52,12 @@ export class AppComponent implements OnInit {
       },
       error: (err) => {
         this.error = err?.error?.message || 'Upload failed';
-        this.uploadResult = err?.error as UploadResponse;
+        this.uploadResult = {
+          id: '',
+          message: this.error,
+          validation: err?.error?.validation ?? { warnings: [], errors: [] },
+          analyzer: err?.error?.analyzer ?? { warnings: [], errors: [] }
+        };
         this.loading = false;
       }
     });

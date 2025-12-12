@@ -14,12 +14,17 @@ class ConfigPayload(BaseModel):
         return self.__root__
 
 
+def normalize(value: str) -> str:
+    # normalize dash variants and strip whitespace to avoid false negatives
+    return (value or "").strip().replace("–", "-").replace("—", "-")
+
+
 def check_airac(value: str) -> bool:
-    return bool(re.match(r"^AIRAC-\\d{4}-\\d{2}$", value or ""))
+    return bool(re.match(r"^AIRAC-\\d{4}-\\d{2}$", normalize(value)))
 
 
 def check_semver(value: str) -> bool:
-    return bool(re.match(r"^\\d+\\.\\d+\\.\\d+$", value or ""))
+    return bool(re.match(r"^\\d+\\.\\d+\\.\\d+$", normalize(value)))
 
 
 @app.post("/analyze")

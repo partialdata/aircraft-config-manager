@@ -16,9 +16,9 @@ import java.util.Optional;
 public class ConfigService {
     private final ConfigRepository repository;
     private final ValidationService validationService;
-    private final AnalyzerClient analyzerClient;
+    private final AnalyzerPort analyzerClient;
 
-    public ConfigService(ConfigRepository repository, ValidationService validationService, AnalyzerClient analyzerClient) {
+    public ConfigService(ConfigRepository repository, ValidationService validationService, AnalyzerPort analyzerClient) {
         this.repository = repository;
         this.validationService = validationService;
         this.analyzerClient = analyzerClient;
