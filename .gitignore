@@ -1,31 +1,29 @@
-# macOS
-.DS_Store
-
-# Java / Maven / Gradle
-target/
-build/
+# General
 *.log
-*.class
-*.jar
-*.war
-*.iml
-.gradle/
-.mvn/wrapper/maven-wrapper.jar
+*.tmp
+*.swp
+.env
 
 # Node / Angular
-node_modules/
-dist/
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.cache/
+frontend/coverage/
 npm-debug.log
-yarn-error.log
+
+# Java / Maven
+backend/target/
+backend/.idea/
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
 
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 .venv/
-.env
 
-# VSCode / IDEs
-.vscode/
-.idea/
-*.swp
+# macOS
+.DS_Store
 prd.md

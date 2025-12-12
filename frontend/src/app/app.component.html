@@ -1,0 +1,91 @@
+<div class="layout">
+  <header class="hero card">
+    <div>
+      <p class="eyebrow">Local microservices demo</p>
+      <h1>{{ title }}</h1>
+      <p class="subhead">Upload aircraft configuration JSON, validate through Java + Python services, and compare versions.</p>
+      <div class="actions">
+        <button (click)="refresh()">Refresh</button>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="metric card">Configs: <strong>{{ configs.length }}</strong></div>
+      <div class="metric card">Analyzer: <span class="badge success">live</span></div>
+    </div>
+  </header>
+
+  <section class="grid">
+    <div class="card">
+      <h3>Upload configuration</h3>
+      <p class="muted">Upload a .json file or paste raw JSON.</p>
+      <input type="file" accept=".json" (change)="onFileChange($event)" />
+      <p class="muted center">or</p>
+      <textarea rows="8" placeholder="{ ... }" [(ngModel)]="uploadJson"></textarea>
+      <button [disabled]="loading" (click)="upload()">{{ loading ? 'Uploading...' : 'Submit' }}</button>
+      <p *ngIf="error" class="error">{{ error }}</p>
+      <div *ngIf="uploadResult" class="result">
+        <p>Saved as <strong>{{ uploadResult.id }}</strong></p>
+        <div class="pill-row">
+          <span class="badge" [ngClass]="uploadResult.validation.errors.length ? 'error' : 'success'">Java errors: {{ uploadResult.validation.errors.length }}</span>
+          <span class="badge warning">Warnings: {{ uploadResult.validation.warnings.length + uploadResult.analyzer.warnings.length }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Stored configurations</h3>
+      <table class="table">
+        <thead>
+          <tr><th>ID</th><th>Aircraft</th><th>Version</th><th>NAV</th><th>Created</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let cfg of configs">
+            <td>{{ cfg.configId || cfg.id }}</td>
+            <td>{{ cfg.aircraftType }}</td>
+            <td>{{ cfg.softwareVersion }}</td>
+            <td>{{ cfg.navDataCycle }}</td>
+            <td>{{ cfg.createdAt | date:'short' }}</td>
+            <td class="pill-row">
+              <button (click)="selectForCompare(cfg.id, 'first')">A</button>
+              <button (click)="selectForCompare(cfg.id, 'second')">B</button>
+              <button (click)="loadReport(cfg.id)">Report</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="pill-row muted">A: {{ firstId || 'select' }} | B: {{ secondId || 'select' }}</div>
+      <button [disabled]="!firstId || !secondId" (click)="runCompare()">Compare</button>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="card" *ngIf="compareResult">
+      <h3>Diff</h3>
+      <p class="muted">{{ compareResult.firstId }} → {{ compareResult.secondId }}</p>
+      <div *ngFor="let key of compareResult.changedFields | keyvalue">
+        <strong>{{ key.key }}</strong>: {{ key.value }}
+      </div>
+      <div *ngIf="compareResult.addedModules.length">
+        <p class="diff-add">Added modules: {{ compareResult.addedModules.join(', ') }}</p>
+      </div>
+      <div *ngIf="compareResult.removedModules.length">
+        <p class="diff-remove">Removed modules: {{ compareResult.removedModules.join(', ') }}</p>
+      </div>
+    </div>
+
+    <div class="card" *ngIf="report">
+      <h3>Report</h3>
+      <p class="muted">Generated {{ report.generatedAt | date:'short' }}</p>
+      <div class="pill-row">
+        <span class="badge success">Java OK: {{ report.validation.errors.length === 0 }}</span>
+        <span class="badge warning">Warnings: {{ report.validation.warnings.length + report.analyzer.warnings.length }}</span>
+      </div>
+      <h4>Metadata</h4>
+      <pre>{{ report.metadata | json }}</pre>
+      <h4>Validation</h4>
+      <pre>{{ report.validation | json }}</pre>
+      <h4>Analyzer</h4>
+      <pre>{{ report.analyzer | json }}</pre>
+    </div>
+  </section>
+</div>

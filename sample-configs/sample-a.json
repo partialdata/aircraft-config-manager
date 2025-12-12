@@ -1,0 +1,10 @@
+{
+  "configId": "ACM-1001",
+  "aircraftType": "A320",
+  "softwareVersion": "1.2.3",
+  "navDataCycle": "AIRAC-2024-08",
+  "modules": [
+    { "name": "FMS", "enabled": true },
+    { "name": "Comms", "enabled": true }
+  ]
+}

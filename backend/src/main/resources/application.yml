@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:acmdb;DB_CLOSE_DELAY=-1;MODE=LEGACY
+    driverClassName: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: true
+      path: /h2
+server:
+  port: 8080
+analyzer:
+  url: http://analyzer:8000/analyze

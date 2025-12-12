@@ -1,0 +1,11 @@
+{
+  "configId": "ACM-1002",
+  "aircraftType": "A320",
+  "softwareVersion": "1.3.0",
+  "navDataCycle": "AIRAC-2024-09",
+  "modules": [
+    { "name": "FMS", "enabled": true },
+    { "name": "Weather", "enabled": false },
+    { "name": "Cabin", "enabled": true }
+  ]
+}
