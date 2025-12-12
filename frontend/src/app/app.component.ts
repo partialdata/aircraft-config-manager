@@ -44,10 +44,34 @@ import { ConfigSummary, DiffResponse, ReportResponse, UploadResponse } from './t
     </div>
 
     <div class="card">
-      <h3>Stored configurations</h3>
+      <h3>Compare configurations</h3>
+      <div class="pill-row">
+        <div class="select-group">
+          <label class="muted">Config A</label>
+          <select [(ngModel)]="firstId">
+            <option [ngValue]="''">Select config</option>
+            <option *ngFor="let cfg of configs" [ngValue]="cfg.id">{{ cfg.configId || cfg.id }} · {{ cfg.navDataCycle }}</option>
+          </select>
+        </div>
+        <div class="select-group">
+          <label class="muted">Config B</label>
+          <select [(ngModel)]="secondId">
+            <option [ngValue]="''">Select config</option>
+            <option *ngFor="let cfg of configs" [ngValue]="cfg.id">{{ cfg.configId || cfg.id }} · {{ cfg.navDataCycle }}</option>
+          </select>
+        </div>
+        <button [disabled]="!firstId || !secondId || firstId === secondId" (click)="runCompare()">Compare</button>
+      </div>
+      <p class="muted">Select any two stored configs to view diffs.</p>
+    </div>
+  </section>
+
+  <section class="card table-wrap">
+    <h3>Stored configurations</h3>
+    <div class="table-scroll">
       <table class="table">
         <thead>
-          <tr><th>ID</th><th>Aircraft</th><th>Version</th><th>NAV</th><th>Created</th><th>Actions</th></tr>
+          <tr><th>ID</th><th>Aircraft</th><th>Version</th><th>NAV</th><th>Created</th><th class="actions-col">Actions</th></tr>
         </thead>
         <tbody>
           <tr *ngFor="let cfg of configs">
@@ -56,16 +80,12 @@ import { ConfigSummary, DiffResponse, ReportResponse, UploadResponse } from './t
             <td>{{ cfg.softwareVersion }}</td>
             <td>{{ cfg.navDataCycle }}</td>
             <td>{{ cfg.createdAt | date:'short' }}</td>
-            <td class="pill-row">
-              <button (click)="selectForCompare(cfg.id, 'first')">A</button>
-              <button (click)="selectForCompare(cfg.id, 'second')">B</button>
+            <td class="pill-row actions-col">
               <button (click)="loadReport(cfg.id)">Report</button>
             </td>
           </tr>
         </tbody>
       </table>
-      <div class="pill-row muted">A: {{ firstId || 'select' }} | B: {{ secondId || 'select' }}</div>
-      <button [disabled]="!firstId || !secondId" (click)="runCompare()">Compare</button>
     </div>
   </section>
 

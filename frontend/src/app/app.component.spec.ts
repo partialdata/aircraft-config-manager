@@ -49,9 +49,9 @@ describe('AppComponent', () => {
     expect(component.uploadResult?.validation?.errors).toContain('x');
   });
 
-  it('sets compare ids and triggers compare', () => {
-    component.selectForCompare('one', 'first');
-    component.selectForCompare('two', 'second');
+  it('triggers compare when both ids are set', () => {
+    component.firstId = 'one';
+    component.secondId = 'two';
     component.runCompare();
     expect(api.compare).toHaveBeenCalledWith('one', 'two');
   });
