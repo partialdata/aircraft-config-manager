@@ -1,13 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { NgFor, NgIf, DatePipe, KeyValuePipe, JsonPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ConfigService } from './config.service';
-import { ConfigSummary, DiffResponse, ReportResponse, UploadResponse } from './types';
+import { ConfigStore } from './config.store';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [NgFor, NgIf, DatePipe, KeyValuePipe, JsonPipe, FormsModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
 <div class="layout">
   <header class="hero card">
@@ -16,11 +16,11 @@ import { ConfigSummary, DiffResponse, ReportResponse, UploadResponse } from './t
       <h1>{{ title }}</h1>
       <p class="subhead">Upload aircraft configuration JSON, validate through Java + Python services, and compare versions.</p>
       <div class="actions">
-        <button (click)="refresh()">Refresh</button>
+        <button [disabled]="store.listLoading()" (click)="store.refresh()">Refresh</button>
       </div>
     </div>
     <div class="hero-stats">
-      <div class="metric card">Configs: <strong>{{ configs.length }}</strong></div>
+      <div class="metric card">Configs: <strong>{{ store.configs().length }}</strong></div>
       <div class="metric card">Analyzer: <span class="badge success">live</span></div>
     </div>
   </header>
@@ -31,10 +31,12 @@ import { ConfigSummary, DiffResponse, ReportResponse, UploadResponse } from './t
       <p class="muted">Upload a .json file or paste raw JSON.</p>
       <input type="file" accept=".json" (change)="onFileChange($event)" />
       <p class="muted center">or</p>
-      <textarea rows="8" placeholder="{ ... }" [(ngModel)]="uploadJson"></textarea>
-      <button [disabled]="loading" (click)="upload()">{{ loading ? 'Uploading...' : 'Submit' }}</button>
-      <p *ngIf="error" class="error">{{ error }}</p>
-      <div *ngIf="uploadResult" class="result">
+      <textarea rows="8" placeholder="{ ... }" [ngModel]="store.uploadJson()" (ngModelChange)="store.setUploadJson($event)"></textarea>
+      <button [disabled]="store.uploadLoading()" (click)="store.upload()">
+        {{ store.uploadLoading() ? 'Uploading...' : 'Submit' }}
+      </button>
+      <p *ngIf="store.uploadError()" class="error">{{ store.uploadError() }}</p>
+      <div *ngIf="store.uploadResult() as uploadResult" class="result">
         <p>Saved as <strong>{{ uploadResult.id }}</strong></p>
         <div class="pill-row">
           <span class="badge" [ngClass]="uploadResult.validation.errors.length ? 'error' : 'success'">Java errors: {{ uploadResult.validation.errors.length }}</span>
@@ -48,19 +50,21 @@ import { ConfigSummary, DiffResponse, ReportResponse, UploadResponse } from './t
       <div class="pill-row">
         <div class="select-group">
           <label class="muted">Config A</label>
-          <select [(ngModel)]="firstId">
+          <select [ngModel]="store.firstId()" (ngModelChange)="store.setFirstId($event)">
             <option [ngValue]="''">Select config</option>
-            <option *ngFor="let cfg of configs" [ngValue]="cfg.id">{{ cfg.configId || cfg.id }} · {{ cfg.navDataCycle }}</option>
+            <option *ngFor="let cfg of store.configs()" [ngValue]="cfg.id">{{ cfg.configId || cfg.id }} · {{ cfg.navDataCycle }}</option>
           </select>
         </div>
         <div class="select-group">
           <label class="muted">Config B</label>
-          <select [(ngModel)]="secondId">
+          <select [ngModel]="store.secondId()" (ngModelChange)="store.setSecondId($event)">
             <option [ngValue]="''">Select config</option>
-            <option *ngFor="let cfg of configs" [ngValue]="cfg.id">{{ cfg.configId || cfg.id }} · {{ cfg.navDataCycle }}</option>
+            <option *ngFor="let cfg of store.configs()" [ngValue]="cfg.id">{{ cfg.configId || cfg.id }} · {{ cfg.navDataCycle }}</option>
           </select>
         </div>
-        <button [disabled]="!firstId || !secondId || firstId === secondId" (click)="runCompare()">Compare</button>
+        <button [disabled]="!store.canCompare()" (click)="store.runCompare()">
+          {{ store.compareLoading() ? 'Comparing...' : 'Compare' }}
+        </button>
       </div>
       <p class="muted">Select any two stored configs to view diffs.</p>
     </div>
@@ -68,20 +72,23 @@ import { ConfigSummary, DiffResponse, ReportResponse, UploadResponse } from './t
 
   <section class="card table-wrap">
     <h3>Stored configurations</h3>
+    <p *ngIf="store.listError()" class="error">{{ store.listError() }}</p>
     <div class="table-scroll">
       <table class="table">
         <thead>
           <tr><th>ID</th><th>Aircraft</th><th>Version</th><th>NAV</th><th>Created</th><th class="actions-col">Actions</th></tr>
         </thead>
         <tbody>
-          <tr *ngFor="let cfg of configs">
+          <tr *ngFor="let cfg of store.configs()">
             <td>{{ cfg.configId || cfg.id }}</td>
             <td>{{ cfg.aircraftType }}</td>
             <td>{{ cfg.softwareVersion }}</td>
             <td>{{ cfg.navDataCycle }}</td>
             <td>{{ cfg.createdAt | date:'short' }}</td>
             <td class="pill-row actions-col">
-              <button (click)="loadReport(cfg.id)">Report</button>
+              <button [disabled]="store.reportLoading()" (click)="store.loadReport(cfg.id)">
+                {{ store.reportLoading() ? 'Loading...' : 'Report' }}
+              </button>
             </td>
           </tr>
         </tbody>
@@ -90,7 +97,7 @@ import { ConfigSummary, DiffResponse, ReportResponse, UploadResponse } from './t
   </section>
 
   <section class="grid">
-    <div class="card" *ngIf="compareResult">
+    <div class="card" *ngIf="store.compareResult() as compareResult">
       <h3>Diff</h3>
       <p class="muted">{{ compareResult.firstId }} → {{ compareResult.secondId }}</p>
       <div *ngFor="let key of compareResult.changedFields | keyvalue">
@@ -104,7 +111,7 @@ import { ConfigSummary, DiffResponse, ReportResponse, UploadResponse } from './t
       </div>
     </div>
 
-    <div class="card" *ngIf="report">
+    <div class="card" *ngIf="store.report() as report">
       <h3>Report</h3>
       <p class="muted">Generated {{ report.generatedAt | date:'short' }}</p>
       <div class="pill-row">
@@ -123,72 +130,14 @@ import { ConfigSummary, DiffResponse, ReportResponse, UploadResponse } from './t
   `,
   styles: []
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
   title = 'Aircraft Config Manager';
-  configs: ConfigSummary[] = [];
-  uploadJson = '';
-  uploadFile?: File;
-  uploadResult?: UploadResponse;
-  loading = false;
-  compareResult?: DiffResponse;
-  report?: ReportResponse;
-  firstId = '';
-  secondId = '';
-  error?: string;
-
-  constructor(private api: ConfigService) {}
-
-  ngOnInit() {
-    this.refresh();
-  }
-
-  refresh() {
-    this.api.listConfigs().subscribe(data => this.configs = data);
-  }
+  readonly store = inject(ConfigStore);
 
   onFileChange(event: Event) {
     const target = event.target as HTMLInputElement;
     if (target.files && target.files.length > 0) {
-      this.uploadFile = target.files[0];
+      this.store.setUploadFile(target.files[0]);
     }
-  }
-
-  upload() {
-    this.loading = true;
-    this.error = undefined;
-    this.api.upload(this.uploadFile, this.uploadJson).subscribe({
-      next: (res) => {
-        this.uploadResult = res;
-        this.loading = false;
-        this.refresh();
-      },
-      error: (err) => {
-        this.error = err?.error?.message || 'Upload failed';
-        this.uploadResult = {
-          id: '',
-          message: this.error,
-          validation: err?.error?.validation ?? { warnings: [], errors: [] },
-          analyzer: err?.error?.analyzer ?? { warnings: [], errors: [] }
-        };
-        this.loading = false;
-      }
-    });
-  }
-
-  selectForCompare(id: string, position: 'first' | 'second') {
-    if (position === 'first') {
-      this.firstId = id;
-    } else {
-      this.secondId = id;
-    }
-  }
-
-  runCompare() {
-    if (!this.firstId || !this.secondId) return;
-    this.api.compare(this.firstId, this.secondId).subscribe(diff => this.compareResult = diff);
-  }
-
-  loadReport(id: string) {
-    this.api.report(id).subscribe(rep => this.report = rep);
   }
 }

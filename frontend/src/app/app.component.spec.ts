@@ -1,58 +1,73 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { signal } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { AppComponent } from './app.component';
-import { ConfigService } from './config.service';
-import { UploadResponse } from './types';
+import { ConfigStore } from './config.store';
+import { DiffResponse, UploadResponse } from './types';
 
-class ConfigServiceStub {
-  listConfigs = jasmine.createSpy('listConfigs').and.returnValue(of([]));
-  upload = jasmine.createSpy('upload').and.returnValue(of({} as UploadResponse));
-  compare = jasmine.createSpy('compare').and.returnValue(of({} as any));
-  report = jasmine.createSpy('report').and.returnValue(of({} as any));
+class ConfigStoreStub {
+  configs = signal([]);
+  listLoading = signal(false);
+  listError = signal<string | null>(null);
+  uploadJson = signal('');
+  uploadResult = signal<UploadResponse | null>(null);
+  uploadLoading = signal(false);
+  uploadError = signal<string | null>(null);
+  compareResult = signal<DiffResponse | null>(null);
+  compareLoading = signal(false);
+  report = signal(null);
+  reportLoading = signal(false);
+  firstId = signal('');
+  secondId = signal('');
+  canCompare = signal(true);
+
+  refresh = jasmine.createSpy('refresh');
+  setUploadJson = jasmine.createSpy('setUploadJson');
+  setUploadFile = jasmine.createSpy('setUploadFile');
+  upload = jasmine.createSpy('upload');
+  setFirstId = jasmine.createSpy('setFirstId');
+  setSecondId = jasmine.createSpy('setSecondId');
+  runCompare = jasmine.createSpy('runCompare');
+  loadReport = jasmine.createSpy('loadReport');
 }
 
 describe('AppComponent', () => {
   let fixture: ComponentFixture<AppComponent>;
   let component: AppComponent;
-  let api: ConfigServiceStub;
+  let store: ConfigStoreStub;
 
   beforeEach(async () => {
+    store = new ConfigStoreStub();
     await TestBed.configureTestingModule({
       imports: [AppComponent],
-      providers: [{ provide: ConfigService, useClass: ConfigServiceStub }]
+      providers: [{ provide: ConfigStore, useValue: store }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(AppComponent);
     component = fixture.componentInstance;
-    api = TestBed.inject(ConfigService) as unknown as ConfigServiceStub;
   });
 
-  it('loads configs on init', () => {
+  it('wires refresh button to the store', () => {
     fixture.detectChanges();
-    expect(api.listConfigs).toHaveBeenCalled();
+    const refreshBtn = fixture.debugElement.query(By.css('button'));
+    refreshBtn.triggerEventHandler('click', {});
+    expect(store.refresh).toHaveBeenCalled();
   });
 
-  it('handles successful upload', () => {
-    const res = { id: '123', message: 'ok', validation: { warnings: [], errors: [] }, analyzer: { warnings: [], errors: [] } } as UploadResponse;
-    api.upload.and.returnValue(of(res));
-    component.uploadJson = '{ }';
-    component.upload();
-    expect(api.upload).toHaveBeenCalled();
-    expect(component.uploadResult).toEqual(res);
-    expect(component.error).toBeUndefined();
+  it('sends file selection into the store', () => {
+    const file = new File(['{}'], 'config.json', { type: 'application/json' });
+    const input = fixture.debugElement.query(By.css('input[type="file"]'));
+    const event = { target: { files: [file] } };
+    input.triggerEventHandler('change', event);
+    expect(store.setUploadFile).toHaveBeenCalledWith(file);
   });
 
-  it('maps upload errors safely', () => {
-    api.upload.and.returnValue(throwError(() => ({ error: { message: 'bad', validation: { warnings: [], errors: ['x'] } } })));
-    component.upload();
-    expect(component.error).toBe('bad');
-    expect(component.uploadResult?.validation?.errors).toContain('x');
-  });
-
-  it('triggers compare when both ids are set', () => {
-    component.firstId = 'one';
-    component.secondId = 'two';
-    component.runCompare();
-    expect(api.compare).toHaveBeenCalledWith('one', 'two');
+  it('fires upload through the facade', () => {
+    fixture.detectChanges();
+    const uploadBtn = fixture.debugElement.queryAll(By.css('button')).find(btn =>
+      (btn.nativeElement.textContent as string).includes('Submit')
+    );
+    uploadBtn?.triggerEventHandler('click', {});
+    expect(store.upload).toHaveBeenCalled();
   });
 });
