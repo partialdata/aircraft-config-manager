@@ -9,6 +9,7 @@ class ConfigServiceStub {
   upload = jasmine.createSpy('upload').and.returnValue(of({} as UploadResponse));
   compare = jasmine.createSpy('compare').and.returnValue(of({} as DiffResponse));
   report = jasmine.createSpy('report').and.returnValue(of({} as ReportResponse));
+  delete = jasmine.createSpy('delete').and.returnValue(of(void 0));
 }
 
 describe('ConfigStore', () => {
@@ -84,5 +85,20 @@ describe('ConfigStore', () => {
     api.report.and.returnValue(of(report));
     store.loadReport('one');
     expect(store.report()).toEqual(report);
+  });
+
+  it('prevents duplicate uploads by configId from JSON', () => {
+    store['configs'].set([{ id: '1', configId: 'DUP', aircraftType: '', softwareVersion: '', navDataCycle: '', createdAt: '' }]);
+    store.setUploadJson('{"configId":"DUP"}');
+    store.upload();
+    expect(store.uploadError()).toContain('already exists');
+    expect(api.upload).not.toHaveBeenCalled();
+  });
+
+  it('deletes a config and refreshes', () => {
+    spyOn(store, 'refresh');
+    store.deleteConfig('abc');
+    expect(api.delete).toHaveBeenCalledWith('abc');
+    expect(store.refresh).toHaveBeenCalled();
   });
 });

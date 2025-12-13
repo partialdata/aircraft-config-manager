@@ -57,4 +57,11 @@ describe('ConfigService', () => {
     expect(req.request.method).toBe('GET');
     req.flush({});
   });
+
+  it('deletes a config', () => {
+    service.delete('abc').subscribe();
+    const req = http.expectOne(`${BASE}/abc`);
+    expect(req.request.method).toBe('DELETE');
+    req.flush({});
+  });
 });

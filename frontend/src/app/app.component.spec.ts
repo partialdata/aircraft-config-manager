@@ -13,6 +13,7 @@ class ConfigStoreStub {
   uploadResult = signal<UploadResponse | null>(null);
   uploadLoading = signal(false);
   uploadError = signal<string | null>(null);
+  uploadDisabled = signal(false);
   compareResult = signal<DiffResponse | null>(null);
   compareLoading = signal(false);
   report = signal(null);
@@ -20,6 +21,7 @@ class ConfigStoreStub {
   firstId = signal('');
   secondId = signal('');
   canCompare = signal(true);
+  deletingId = signal<string | null>(null);
 
   refresh = jasmine.createSpy('refresh');
   setUploadJson = jasmine.createSpy('setUploadJson');
@@ -29,6 +31,7 @@ class ConfigStoreStub {
   setSecondId = jasmine.createSpy('setSecondId');
   runCompare = jasmine.createSpy('runCompare');
   loadReport = jasmine.createSpy('loadReport');
+  deleteConfig = jasmine.createSpy('deleteConfig');
 }
 
 describe('AppComponent', () => {
@@ -69,5 +72,15 @@ describe('AppComponent', () => {
     );
     uploadBtn?.triggerEventHandler('click', {});
     expect(store.upload).toHaveBeenCalled();
+  });
+
+  it('fires delete through the facade', () => {
+    store.configs.set([{ id: 'one', configId: 'A', aircraftType: '', softwareVersion: '', navDataCycle: '', createdAt: '' }]);
+    fixture.detectChanges();
+    const deleteBtn = fixture.debugElement.queryAll(By.css('button')).find(btn =>
+      (btn.nativeElement.textContent as string).includes('Delete')
+    );
+    deleteBtn?.triggerEventHandler('click', {});
+    expect(store.deleteConfig).toHaveBeenCalledWith('one');
   });
 });

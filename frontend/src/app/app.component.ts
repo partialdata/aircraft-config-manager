@@ -32,7 +32,7 @@ import { ConfigStore } from './config.store';
       <input type="file" accept=".json" (change)="onFileChange($event)" />
       <p class="muted center">or</p>
       <textarea rows="8" placeholder="{ ... }" [ngModel]="store.uploadJson()" (ngModelChange)="store.setUploadJson($event)"></textarea>
-      <button [disabled]="store.uploadLoading()" (click)="store.upload()">
+      <button [disabled]="store.uploadDisabled()" (click)="store.upload()">
         {{ store.uploadLoading() ? 'Uploading...' : 'Submit' }}
       </button>
       <p *ngIf="store.uploadError()" class="error">{{ store.uploadError() }}</p>
@@ -88,6 +88,9 @@ import { ConfigStore } from './config.store';
             <td class="pill-row actions-col">
               <button [disabled]="store.reportLoading()" (click)="store.loadReport(cfg.id)">
                 {{ store.reportLoading() ? 'Loading...' : 'Report' }}
+              </button>
+              <button class="danger" [disabled]="store.deletingId() === cfg.id" (click)="store.deleteConfig(cfg.id)">
+                {{ store.deletingId() === cfg.id ? 'Deleting...' : 'Delete' }}
               </button>
             </td>
           </tr>

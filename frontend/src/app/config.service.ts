@@ -27,4 +27,8 @@ export class ConfigService {
   report(id: string): Observable<ReportResponse> {
     return this.http.get<ReportResponse>(`${this.baseUrl}/${id}/report`);
   }
+
+  delete(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
 }

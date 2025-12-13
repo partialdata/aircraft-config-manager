@@ -98,4 +98,13 @@ public class ConfigController {
         ReportResponse report = configService.buildReport(doc.get(), parsed);
         return ResponseEntity.ok(report);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        if (!repository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        repository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }

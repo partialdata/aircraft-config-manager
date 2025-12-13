@@ -9,14 +9,19 @@ export class ConfigStore {
 
   readonly listLoading = signal(false);
   readonly listError = signal<string | null>(null);
+  readonly deletingId = signal<string | null>(null);
 
   readonly configs = signal<ConfigSummary[]>([]);
 
   readonly uploadJson = signal('');
   private uploadFile?: File;
+  private selectedConfigId: string | null = null;
   readonly uploadResult = signal<UploadResponse | null>(null);
   readonly uploadLoading = signal(false);
   readonly uploadError = signal<string | null>(null);
+  readonly uploadDisabled = computed(() => {
+    return this.uploadLoading() || !!this.uploadError();
+  });
 
   readonly compareResult = signal<DiffResponse | null>(null);
   readonly compareLoading = signal(false);
@@ -58,13 +63,32 @@ export class ConfigStore {
 
   setUploadJson(value: string): void {
     this.uploadJson.set(value);
+    this.uploadResult.set(null);
+    this.uploadError.set(null);
+    this.selectedConfigId = this.tryExtractConfigId(value);
+    this.ensureNotDuplicate();
   }
 
-  setUploadFile(file?: File): void {
+  async setUploadFile(file?: File): Promise<void> {
     this.uploadFile = file;
+    this.uploadResult.set(null);
+    this.uploadError.set(null);
+    this.selectedConfigId = null;
+    if (file) {
+      try {
+        const text = await file.text();
+        this.selectedConfigId = this.tryExtractConfigId(text);
+      } catch {
+        this.uploadError.set('Could not read file');
+        return;
+      }
+    }
+    this.ensureNotDuplicate();
   }
 
   upload(): void {
+    if (this.ensureNotDuplicate()) return;
+    if (this.uploadDisabled()) return;
     this.uploadLoading.set(true);
     this.uploadError.set(null);
     this.api.upload(this.uploadFile, this.uploadJson()).subscribe({
@@ -124,5 +148,45 @@ export class ConfigStore {
         this.reportLoading.set(false);
       }
     });
+  }
+
+  deleteConfig(id: string): void {
+    this.deletingId.set(id);
+    this.api.delete(id).subscribe({
+      next: () => {
+        this.deletingId.set(null);
+        this.refresh();
+      },
+      error: () => {
+        this.deletingId.set(null);
+      }
+    });
+  }
+
+  private tryExtractConfigId(text: string): string | null {
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed.configId === 'string') {
+        return parsed.configId;
+      }
+    } catch {
+      // ignore parse errors here; upload API will handle invalid JSON
+    }
+    return null;
+  }
+
+  private ensureNotDuplicate(): boolean {
+    if (!this.selectedConfigId) {
+      this.uploadError.set(null);
+      return false;
+    }
+    const exists = this.configs().some((cfg) => cfg.configId === this.selectedConfigId);
+    if (exists) {
+      this.uploadError.set(`Config ${this.selectedConfigId} already exists`);
+      this.uploadFile = undefined;
+      return true;
+    }
+    this.uploadError.set(null);
+    return false;
   }
 }
