@@ -20,11 +20,11 @@ def normalize(value: str) -> str:
 
 
 def check_airac(value: str) -> bool:
-    return bool(re.match(r"^AIRAC-\\d{4}-\\d{2}$", normalize(value)))
+    return bool(re.match(r"^AIRAC-\d{4}-\d{2}$", normalize(value)))
 
 
 def check_semver(value: str) -> bool:
-    return bool(re.match(r"^\\d+\\.\\d+\\.\\d+$", normalize(value)))
+    return bool(re.match(r"^\d+\.\d+\.\d+$", normalize(value)))
 
 
 @app.post("/analyze")

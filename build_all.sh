@@ -2,7 +2,7 @@
 set -euo pipefail
 
 echo "[backend] building jar"
-(cd backend && mvn -q -DskipTests package)
+(cd backend && mvn -q -DskipTests clean package)
 
 echo "[frontend] building Angular"
 (cd frontend && npm install && npm run build -- --configuration production)

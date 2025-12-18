@@ -1,10 +1,16 @@
-from fastapi.testclient import TestClient
+import pytest
+from httpx import ASGITransport, AsyncClient
 from main import app
 
-client = TestClient(app)
+
+@pytest.fixture(scope="module")
+async def client():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as ac:
+        yield ac
 
 
-def test_analyze_valid_payload_passes():
+@pytest.mark.anyio
+async def test_analyze_valid_payload_passes(client):
     payload = {
         "configId": "ACM-1001",
         "aircraftType": "A320",
@@ -13,7 +19,7 @@ def test_analyze_valid_payload_passes():
         "modules": [{"name": "FMS", "enabled": True}]
     }
 
-    res = client.post("/analyze", json=payload)
+    res = await client.post("/analyze", json=payload)
     body = res.json()
 
     assert res.status_code == 200
@@ -21,14 +27,15 @@ def test_analyze_valid_payload_passes():
     assert body["warnings"] == []
 
 
-def test_analyze_flags_bad_inputs():
+@pytest.mark.anyio
+async def test_analyze_flags_bad_inputs(client):
     payload = {
         "softwareVersion": "1.2",  # not semver
         "navDataCycle": "2024-08",  # not AIRAC
         "modules": [{"name": "Weather", "enabled": False}]
     }
 
-    res = client.post("/analyze", json=payload)
+    res = await client.post("/analyze", json=payload)
     body = res.json()
 
     assert res.status_code == 200

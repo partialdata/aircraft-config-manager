@@ -3,8 +3,11 @@
 *.tmp
 *.swp
 .env
+.m2/
 
 # Node / Angular
+node_modules/
+node_modules_old_cleanup/
 frontend/node_modules/
 frontend/dist/
 frontend/.angular/
