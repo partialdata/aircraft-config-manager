@@ -8,11 +8,13 @@ Local, containerized microservices demo that validates, stores, analyzes, and co
 - The demo shows a realistic internal workflow: upload a config, run fast Java validations, call out to a Python rule engine, store the record, and generate reports/diffs for reviewers.
 
 ## Architecture
-```
-+-----------------+       +------------------+       +-------------------+
-| Angular SPA     | <---> | Spring Boot API  | <---> | FastAPI Analyzer  |
-| (nginx)         |       | + H2 database    |       | rule checks       |
-+-----------------+       +------------------+       +-------------------+
+```mermaid
+flowchart LR
+  A["Angular SPA<br/>(nginx)"] <--> B["Spring Boot API<br/>+ H2 database"] <--> C["FastAPI Analyzer<br/>rule checks"]
+
+  style A stroke-width:2px
+  style B stroke-width:2px
+  style C stroke-width:2px
 ```
 
 - Frontend: Angular 17 built and served by nginx (port 4200)
