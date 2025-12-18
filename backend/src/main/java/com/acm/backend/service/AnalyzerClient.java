@@ -1,5 +1,6 @@
 package com.acm.backend.service;
 
+import com.acm.backend.dto.AnalyzerResponse;
 import com.acm.backend.dto.ValidationResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
@@ -10,9 +11,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.Map;
+import java.net.URI;
 
 @Service
 public class AnalyzerClient implements AnalyzerPort {
@@ -31,26 +31,16 @@ public class AnalyzerClient implements AnalyzerPort {
         ValidationResult result = new ValidationResult();
         try {
             HttpEntity<JsonNode> entity = new HttpEntity<>(node);
-            ResponseEntity<Map> response = restTemplate.exchange(
-                    UriComponentsBuilder.fromHttpUrl(analyzerUrl).toUriString(),
+            ResponseEntity<AnalyzerResponse> response = restTemplate.exchange(
+                    URI.create(analyzerUrl),
                     HttpMethod.POST,
                     entity,
-                    Map.class
+                    AnalyzerResponse.class
             );
-            Map<String, Object> body = response.getBody();
+            AnalyzerResponse body = response.getBody();
             if (body != null) {
-                Object warnings = body.get("warnings");
-                Object errors = body.get("errors");
-                if (warnings instanceof Iterable<?>) {
-                    for (Object w : (Iterable<?>) warnings) {
-                        result.addWarning(String.valueOf(w));
-                    }
-                }
-                if (errors instanceof Iterable<?>) {
-                    for (Object e : (Iterable<?>) errors) {
-                        result.addError(String.valueOf(e));
-                    }
-                }
+                body.getWarnings().forEach(result::addWarning);
+                body.getErrors().forEach(result::addError);
             }
         } catch (Exception ex) {
             log.warn("Analyzer call failed: {}", ex.getMessage());

@@ -49,6 +49,14 @@ public class ConfigService {
         return repository.findById(id);
     }
 
+    public boolean delete(String id) {
+        if (!repository.existsById(id)) {
+            return false;
+        }
+        repository.deleteById(id);
+        return true;
+    }
+
     public ReportResponse buildReport(ConfigDocument doc, JsonNode parsed) {
         ValidationResult validation = validationService.validate(parsed);
         ValidationResult analyzer = analyzerClient.analyze(parsed);

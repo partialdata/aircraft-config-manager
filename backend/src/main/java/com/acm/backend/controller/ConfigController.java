@@ -7,7 +7,6 @@ import com.acm.backend.dto.ReportResponse;
 import com.acm.backend.dto.UploadResponse;
 import com.acm.backend.dto.ValidationResult;
 import com.acm.backend.model.ConfigDocument;
-import com.acm.backend.repository.ConfigRepository;
 import com.acm.backend.service.AnalyzerPort;
 import com.acm.backend.service.ConfigService;
 import com.acm.backend.service.DiffService;
@@ -34,30 +33,37 @@ public class ConfigController {
     private final AnalyzerPort analyzerClient;
     private final ConfigService configService;
     private final DiffService diffService;
-    private final ConfigRepository repository;
 
-    public ConfigController(ValidationService validationService, AnalyzerPort analyzerClient, ConfigService configService, DiffService diffService, ConfigRepository repository) {
+    public ConfigController(ValidationService validationService, AnalyzerPort analyzerClient, ConfigService configService, DiffService diffService) {
         this.validationService = validationService;
         this.analyzerClient = analyzerClient;
         this.configService = configService;
         this.diffService = diffService;
-        this.repository = repository;
     }
 
     @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<UploadResponse> upload(
             @RequestPart(value = "file", required = false) MultipartFile file,
             @RequestPart(value = "configJson", required = false) String configJson
-    ) throws IOException {
+    ) {
         if ((file == null || file.isEmpty()) && !StringUtils.hasText(configJson)) {
             return ResponseEntity.badRequest().body(new UploadResponse(null, "configJson or file is required", new ValidationResult(), new ValidationResult()));
         }
         String rawJson = configJson;
         if (file != null && !file.isEmpty()) {
-            rawJson = new String(file.getBytes(), StandardCharsets.UTF_8);
+            try {
+                rawJson = new String(file.getBytes(), StandardCharsets.UTF_8);
+            } catch (IOException ex) {
+                return ResponseEntity.badRequest().body(new UploadResponse(null, "Unable to read file: " + ex.getMessage(), new ValidationResult(), new ValidationResult()));
+            }
         }
 
-        JsonNode parsed = validationService.parse(rawJson);
+        JsonNode parsed;
+        try {
+            parsed = validationService.parse(rawJson);
+        } catch (IOException ex) {
+            return ResponseEntity.badRequest().body(new UploadResponse(null, "Invalid JSON: " + ex.getMessage(), new ValidationResult(), new ValidationResult()));
+        }
         ValidationResult validation = validationService.validate(parsed);
         ValidationResult analyzer = analyzerClient.analyze(parsed);
 
@@ -72,15 +78,15 @@ public class ConfigController {
 
     @GetMapping
     public List<ConfigSummary> list() {
-        return repository.findAll().stream()
+        return configService.list().stream()
                 .map(doc -> new ConfigSummary(doc.getId(), doc.getConfigId(), doc.getAircraftType(), doc.getSoftwareVersion(), doc.getNavDataCycle(), doc.getCreatedAt()))
                 .collect(Collectors.toList());
     }
 
     @PostMapping("/compare")
     public ResponseEntity<DiffResponse> compare(@RequestBody CompareRequest request) {
-        Optional<ConfigDocument> first = repository.findById(request.getFirstId());
-        Optional<ConfigDocument> second = repository.findById(request.getSecondId());
+        Optional<ConfigDocument> first = configService.find(request.getFirstId());
+        Optional<ConfigDocument> second = configService.find(request.getSecondId());
         if (first.isEmpty() || second.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -90,7 +96,7 @@ public class ConfigController {
 
     @GetMapping("/{id}/report")
     public ResponseEntity<ReportResponse> report(@PathVariable String id) throws IOException {
-        Optional<ConfigDocument> doc = repository.findById(id);
+        Optional<ConfigDocument> doc = configService.find(id);
         if (doc.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -101,10 +107,9 @@ public class ConfigController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable String id) {
-        if (!repository.existsById(id)) {
+        if (!configService.delete(id)) {
             return ResponseEntity.notFound().build();
         }
-        repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 }

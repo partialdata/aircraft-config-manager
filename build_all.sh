@@ -8,6 +8,10 @@ echo "[frontend] building Angular"
 (cd frontend && npm install && npm run build -- --configuration production)
 
 echo "[analyzer] verifying environment"
-(cd analyzer && python -m py_compile main.py)
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+  PYTHON_BIN="python"
+fi
+(cd analyzer && "$PYTHON_BIN" -m py_compile main.py)
 
 echo "Artifacts built."
